@@ -1,0 +1,30 @@
+/* MenuBar.css */
+.navbar {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: white;
+  border: '1px solid black';
+  padding: 1rem;
+
+}
+
+.navbar userDisplay {
+  display: flex;
+}
+
+.navbar ul {
+  list-style-type: none;
+  display: flex;
+  margin: 0;
+  padding: 0;
+}
+
+.navbar li {
+  margin: 0 1rem;
+}
+
+.navbar a {
+  color: black;
+  text-decoration: none;
+}

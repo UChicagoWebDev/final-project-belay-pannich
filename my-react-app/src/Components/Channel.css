@@ -1,0 +1,22 @@
+.sidebar-container ul {
+  list-style-type: none;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-container li {
+  padding: 10px 20px; /* Add padding inside the items */
+  background-color: #3f0e40; /* Button background color */
+  color: white; /* Text color */
+  margin: 5px 0; /* Margin between items */
+  border: none; /* Removes border */
+  cursor: pointer; /* Changes the cursor on hover */
+  border-radius: 5px; /* Optional: Rounds the corners */
+  text-align: center; /* Centers the text */
+}
+
+.sidebar-container li:hover {
+  background-color: #0056b3; /* Darker background on hover */
+}
