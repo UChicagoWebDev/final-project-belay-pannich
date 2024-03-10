@@ -1,12 +1,13 @@
-// // ProtectedRoute.js
-// // This component will check if the user is authenticated. If not, it redirects them to the login page.
-// import { useAuth } from '../contexts/AuthContext';
-// import { Navigate } from 'react-router-dom';
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
 
-// const ProtectedRoute = ({ children }) => {
-//   const { isAuthenticated } = useAuth();
+export const ProtectedRoute = () => {
+  const USERTOKEN = localStorage.getItem('nichada_belay_auth_key')
+  // If not authenticated, redirect to the login page
+  if (!USERTOKEN) {
+    return <Navigate to="/login" replace />;
+  }
 
-//   return isAuthenticated ? children : <Navigate to="/login" replace />;
-// };
-
-// export default ProtectedRoute;
+  // If authenticated, render the child components
+  return <Outlet />;
+};

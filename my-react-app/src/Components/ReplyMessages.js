@@ -16,14 +16,14 @@ export function ReplyMessages ({ channelId, channelName, messageId }) {
   USERTOKEN = localStorage.getItem('nichada_belay_auth_key');     // set the global var
   USER_ID = localStorage.getItem('userId');
   USER_NAME = localStorage.getItem('userName');
-  const [replyPanel, setReplyPanel] = useState(true)
-  const [reMessages, setReMessages] = useState([]);
   config = {
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${localStorage.getItem('token')}`
+      'Content-Type': 'application/json', // Specify the content type
+      'Authorization': `${USERTOKEN}` // Authorization header, for example, a Bearer token
     }
   };
+  const [replyPanel, setReplyPanel] = useState(true)
+  const [reMessages, setReMessages] = useState([]);
 
   useEffect(() => {
     // Fetch messages or set them in some way
@@ -31,10 +31,9 @@ export function ReplyMessages ({ channelId, channelName, messageId }) {
       try {
         const response = await axios.get(`/api/messages/replies_to?channel_id=${channelId}&message_id=${messageId}`, config);
         const data = response.data;
-        console.log(data.length);
         if (Array.isArray(data) && data.length !== 0) {
           setReMessages(data);
-          console.log(data)
+          console.log(`Fetch reply messages`);
         }
       } catch(error) {
         console.error('Failed to fetch messages:', error);
@@ -55,7 +54,6 @@ export function ReplyMessages ({ channelId, channelName, messageId }) {
 
   return (  // This is creating components
     <div className="chat">
-
       {reMessages.map((message, index) => (
         <Messages
         key={index}

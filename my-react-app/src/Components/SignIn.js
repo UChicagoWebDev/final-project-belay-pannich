@@ -41,14 +41,6 @@ function SignIn() {
         }
     };
 
-    const handleSignOut = () => {
-      localStorage.removeItem('nichada_belay_auth_key');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('isAuthenticated');
-
-      alert('SignOut successful');
-    };
-
     const handleUserNameUI = () => {
       var user_name = '';
       user_name = localStorage.getItem('user_name');
@@ -71,7 +63,6 @@ function SignIn() {
             <button type="submit">Sign In</button>
           </div>
         </form>
-        <button onClick={handleSignOut}>Sign Out</button>
       </div>
     );
 }

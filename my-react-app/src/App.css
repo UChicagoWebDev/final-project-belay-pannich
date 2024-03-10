@@ -8,15 +8,31 @@ h4 {
   margin-bottom: 20px;
 }
 
+button {
+  background-color: #007bff; /* Bootstrap primary blue */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+.closeBtn {
+  background-color: grey;
+}
+
 .app_body {
   display: flex;
   height: 100vh;
 }
 
 
-/* -------------- Chat --------------- */
+/* -------------- Channel Layout --------------- */
 /* ----------------------------------- */
-/* channels + messages */
 
 .app-container {
   display: flex;
@@ -45,7 +61,3 @@ h4 {
   padding: 20px;
   overflow-y: auto; /* Enables scrolling for overflow */
 }
-
-
-
-/* ---------- Channel side bar ---------- */

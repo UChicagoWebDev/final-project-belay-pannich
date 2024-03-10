@@ -1,21 +1,34 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import "./Profile.css";
+
+var USERTOKEN = '';
+var USER_ID = '';
+var USER_NAME = '';
+var config = {};
 
 function Profile() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const navigate = useNavigate();
+  USER_ID = localStorage.getItem('userId');
+  USERTOKEN = localStorage.getItem('nichada_belay_auth_key');
+  config = {
+    headers: {
+      'Content-Type': 'application/json', // Specify the content type
+      'Authorization': `${USERTOKEN}` // Authorization header, for example, a Bearer token
+    }
+  };
 
   const handleChangeUsername = async (newUsername) => {
-    const token = localStorage.getItem('token');
     try {
-      const response = await axios.post('/api/user/change-username', { newUsername }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.post('/api/user/change-username', { newUsername }, config);
+      const data = response.data;
+      USER_NAME = data.username;
+      console.log(data.username);
+
       // Handle successful username change
       alert('Username successfully changed.');
     } catch (error) {
@@ -27,25 +40,22 @@ function Profile() {
   const handleChangePassword = async (newPassword) => {
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.post('/api/user/change-password', { newPassword }, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await axios.post('/api/user/change-password', { newPassword }, config);
       // Handle successful password change
       alert('Password successfully changed.');
-      handleLogout(); // Optionally log the user out
     } catch (error) {
       // Handle error
       console.error('Failed to change password', error);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token'); // Assuming token is stored in localStorage
-    // setIsAuthenticated(false); // Update authentication state
-    // Redirect user
-    navigate('/login'); // Redirect to the /login page
+  const handleSignOut = () => {
+    localStorage.removeItem('nichada_belay_auth_key');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userName');
+
+    alert('SignOut successful');
   };
 
   const updateUserName = () => {
@@ -63,7 +73,7 @@ function Profile() {
   return (
     <div className="clip">
       <div className="auth container">
-        <h2>Welcome to Watch Party!</h2>
+        <h2>Welcome to Belay!</h2>
         <div className="alignedForm">
           <label htmlFor="username">Username: </label>
           <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" />
@@ -74,7 +84,9 @@ function Profile() {
           <label htmlFor="repeatPassword">Repeat: </label>
           <input type="password" value={repeatPassword} onChange={(e) => setRepeatPassword(e.target.value)} placeholder="Repeat Password" />
           {/* Error handling for password match can be done here */}
-          <button className="exit logout" onClick={handleLogout}>Log out</button>
+        </div>
+        <div>
+          <button className="exit logout" onClick={handleSignOut}>Log out</button>
         </div>
       </div>
     </div>

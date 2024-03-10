@@ -1,7 +1,6 @@
 import './App.css';
-// import { AuthProvider } from './contexts/AuthContext';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-// import ProtectedRoute from './Components/ProtectedRoute';
+import { ProtectedRoute } from './Components/ProtectedRoute';
 
 import SignIn  from './Components/SignIn';
 import Profile  from './Components/Profile';
@@ -17,10 +16,14 @@ function App() {
     <BrowserRouter>
        <Menubar /> {/* This places the menu bar at the top */}
         <Routes>
-            <Route path="/login" element={<SignIn />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/channel/:channelId" element={<ChannelsList />} />
             <Route path="/" element={<Welcome />} />
+            <Route path="/login" element={<SignIn />} />
+
+            <Route path="/channel/:channelId" element={<ChannelsList />} />
+            <Route path="/channel" element={<ChannelsList />} />
+            <Route element={<ProtectedRoute />}>
+              <Route path="/profile" element={<Profile />} />
+            </Route>
         </Routes>
     </BrowserRouter>
   )

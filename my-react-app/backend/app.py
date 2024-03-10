@@ -8,13 +8,11 @@ app = Flask(__name__)
 CORS(app)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
-session_token = 'abc'
-
 def get_db():
     db = getattr(g, '_database', None)
 
     if db is None:
-        db = g._database = sqlite3.connect('../migration/belay.db')
+        db = g._database = sqlite3.connect('../migration/belay.db' , timeout=30)
         db.row_factory = sqlite3.Row
         setattr(g, '_database', db)
     return db
@@ -31,16 +29,28 @@ def query_db(query, args=(), one=False):
         return rows
     return None
 
-def validate_token():
-    """validates the user's token and retrieves the user
+def get_user_from_token(request):
+    token = request.headers.get('Authorization')
+    return query_db('select * from users where session_token = ?', [token], one=True)
 
-    Returns:
-        user_id(int) or null if not found
+def update_token(user_id, newtoken):
+    user = query_db('UPDATE Users SET session_token = ? WHERE id = ? RETURNING *', (newtoken, user_id), one=True)
+    return user
+
+# Authenticate USER API
+def require_api_key(f):
+    """a decorator function to check user api key
+    Check if the requested API header 'X-API-Key' matches with current user html cookie.
     """
-    token = request.headers.get('Authorization') ### TODO use token or authorization?
-    if session_token == token:
-        return user_id
-    return
+    def decorated_function(*args, **kwargs):
+        user = get_user_from_token(request)
+        if user: # There's X-API-KEY in header and user matches this key exists
+            print("API check: ", user, user['session_token'])
+            return f(*args, **kwargs)
+        else:
+            return jsonify({"error": "Invalid or missing API key."}), 400
+    decorated_function.__name__ = f.__name__
+    return decorated_function
 
 def get_user_from_id(user_id):
     return query_db('select * from Users where id = ?', [user_id], one=True)
@@ -56,14 +66,10 @@ def new_user(username, password):
     return u
 
 # ------------------- API -------------------------
-@app.route('/api/user/credential', methods=['GET'])
-def get_credential():
-    user = get_user_from_api_key(request)
-    return jsonify(dict(user))
 
 @app.route('/')
 def index():
-    return "Messaging App API"
+    return "Messaging App API. Go to port 3000 for FrontEnd."
 
 @app.route('/api/auth', methods=['POST'])
 def authenticate():
@@ -77,7 +83,6 @@ def authenticate():
     """
     session_token = ''.join(random.choices(string.ascii_lowercase + string.digits, k=40))
 
-    # get new password
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
@@ -89,14 +94,16 @@ def authenticate():
         FROM Users
         WHERE username = ? and password = ?
         ''', [username, password], one=True)
-            if user: # found user
-                USER_ID =  user["id"] # save USER_ID
+            if user:
+                # user exists, user can login
+                # update sessionn token in user database
+                user = update_token(user['id'], session_token)
                 return jsonify({
                     'message': "User login",
                     'username': user['username'],
                     'password': user['password'],
                     'id': user['id'],
-                    'token': session_token}), 200
+                    'token': user['session_token']}), 200
             else:
                 return jsonify({"message": "Invalid credentials"}), 401
         except Exception as e:
@@ -111,7 +118,7 @@ def signup():
     """
     print("signup")
 
-    # TODO if user already exist in database, send user to login...?
+    session_token = ''.join(random.choices(string.ascii_lowercase + string.digits, k=40))
 
     if request.method == 'POST':
         data = request.get_json()
@@ -120,31 +127,86 @@ def signup():
 
         try:
             user = query_db('''
-        INSERT INTO Users (username, password)
-        VALUES (?, ?) returning *
-        ''', [username, password], one=True)
-            return jsonify({"message": "Signed up successfully", "username": user['username'], "password": user['password']}), 200
+        INSERT INTO Users (username, password, session_token)
+        VALUES (?, ?, ?) returning *
+        ''', [username, password, session_token], one=True)
+            return jsonify({"message": "Signed up successfully", "username": user['username'], "password": user['password'], "session_token": user['session_token']}), 200
         except sqlite3.IntegrityError:
-            return jsonify({'message': 'Username already taken'}), 400
+            return jsonify({'message': 'Username already taken. For existing user, go to Login.'}), 400
         except Exception as e:
-            return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 50
+            return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
 
 @app.route('/api/login', methods=['POST'])
 def login():
     """Browswer coming in without API-KEY. Log in finds API-KEY that matches input username, password
 """
+    # go to authenticate and return session token
     return authenticate()
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
-    #TODO logout
-    # If using tokens like JWT, consider implementing token invalidation on the backend when the user logs out, especially if you're using refresh tokens.
-    return
+    """remove session token"""
+    print("gethereeeee")
+    user = get_user_from_token(request)
+    print(user)
+
+    try :
+        update_token(user['id'], '')
+        return jsonify({'message': 'User logged out successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
+
+# POST to change the user's name
+@app.route('/api/user/change-username', methods=['POST'])
+@require_api_key
+def update_username():
+    user = get_user_from_token(request)
+    if not user: return jsonify({'error': 'User not found'}), 403
+
+    # get new name
+    if request.method == 'POST':
+        data = request.get_json()
+        new_username = data.get('newUsername')
+
+        try:
+            new_user = query_db('''
+        UPDATE Users
+        SET username = ?
+        WHERE id = ? RETURNING *
+        ''', (new_username, user['id']), one=True)
+            return jsonify({'message': f"Username: {new_user['username']} updated successfully",
+                            "username": new_user["username"]}), 200
+        except Exception as e:
+            return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
+
+# POST to change the user's password
+@app.route('/api/user/change-password', methods=['POST'])
+@require_api_key
+def update_password():
+    user = get_user_from_token(request)
+    if not user: return jsonify({'error': 'User not found'}), 403
+
+    # get new password
+    if request.method == 'POST':
+        data = request.get_json()
+        new_password = data.get('newPassword')
+
+        try:
+            new_user = query_db('''
+        UPDATE Users
+        SET password = ?
+        WHERE id = ? RETURNING *
+        ''', (new_password, user['id']), one=True)
+            return jsonify({'message': f"Username: {new_user['password']} updated successfully",
+                            "username": new_user["username"],
+                            "password": new_user["password"]}), 200
+        except Exception as e:
+            return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
 
 # ------------------- CHANNELS -------------------------
 
 @app.route('/api/channels', methods=['POST'])
-# @require_api_key
+@require_api_key
 def create_channel():
     """_summary_
     Description: Creates a new channel.
@@ -155,7 +217,7 @@ def create_channel():
     if request.method == 'POST':
         if request.is_json:
             data = request.get_json()
-            name = data.get('channel_name')
+            name = data.get('name')
         try:
             new_channel = query_db('''
         INSERT INTO Channels (name)
@@ -165,21 +227,16 @@ def create_channel():
         except Exception as e:
             return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
 
-@app.route('/api/channels', methods=['GET'])
-# @require_api_key
-def get_channels():
-    """
-    Description: Retrieves a list of all channels.
-    Request Header: Authorization: Bearer session_token
-    Response: [{ "id": channel_id, "name": "channel_name" }]
-    """
-    channels = query_db('SELECT * FROM Channels', one=False)
-
-    return jsonify([{'id': channel['id'], 'name': channel['name']} for channel in channels]), 200
+# not used use unread_count api
+# @app.route('/api/channels', methods=['GET'])
+# # @require_api_key
+# def get_channels():
+#     channels = query_db('SELECT * FROM Channels', one=False)
+#     return jsonify([{'id': channel['id'], 'name': channel['name']} for channel in channels]), 200
 
 # updating last read
 @app.route('/api/channels/${channelId}/updateLastSeen', methods=['POST'])
-# @require_api_key
+@require_api_key
 def update_last_message_seen():
     """
     Description: update last message id seen
@@ -209,13 +266,12 @@ def update_last_message_seen():
 
     except Exception as e:
         return jsonify({'error': f'An error occurred while updating last message seen: {e}'}), 500
-
     return
 
 # ------------------- messages -------------------------
 
 @app.route('/api/messages', methods=['POST'])
-# @require_api_key
+@require_api_key
 def post_message():
     """
     Request Header: `Authorization: Bearer session_token`
@@ -239,13 +295,12 @@ def post_message():
 
         return jsonify({"message": "Message posted successfully", "id": message['id'], "content": message['content'], "channel_id": message['channel_id'], "user_id": message['user_id'], "timestamp": message['timestamp'], "replies_to": message['replies_to']}), 201
     except Exception as e:
-        # Log the exception e
         return jsonify({'error': 'An error occurred while posting messages'}), 500
 
 
 ##### CAN ADD replies FIELD TO GET MESSAGE ?
 @app.route('/api/messages', methods=['GET'])
-# @require_api_key
+@require_api_key
 def get_messages():
     """
     Description: Get all the messages in a room
@@ -256,6 +311,7 @@ def get_messages():
     ...]
 
     """
+    print("get message ")
 
     channel_id = request.args.get('channel_id')  # Assuming you pass room_id as a query parameter
 
@@ -280,13 +336,10 @@ def get_messages():
     except Exception as e:
         return jsonify({'error': f'An error occurred while fetching messages: {e}'}), 500
 
-
-
 # TODO testing
 @app.route('/api/messages/unread_counts', methods=['GET'])
 def unread_counts():
-    # user = validate_token()
-    # user_id = user['id']
+    """fetch all channels and unread counts"""
     user_id = 1
 
     unread_by_channel = query_db("""
@@ -313,6 +366,8 @@ LEFT JOIN (
 ) AS UnreadMessages ON Channels.id = UnreadMessages.channel_id
 """, [user_id], one=False)
     channels_list = []
+    if not unread_by_channel:
+        return jsonify(channels_list), 200
     for channel in unread_by_channel:
         channel_dict = {
             'id': channel["channel_id"],
@@ -323,9 +378,8 @@ LEFT JOIN (
     return jsonify(channels_list), 200
 
 
-# TODO: api for reply to
 @app.route('/api/messages/replies_to', methods=['GET'])
-# @require_api_key
+@require_api_key
 def replies_to_messages():
     """
     Description: Get replied messages for a particular message_id
@@ -352,7 +406,7 @@ def replies_to_messages():
                 print("user id not found")
                 continue
             # TODO check what to return
-            ls_replies.append({'message_id': message['id'], 'author': user['username'], 'content': message['content']})
+            ls_replies.append({'id': message['id'], 'username': user['username'], 'content': message['content'], 'timestamp': message['timestamp'], })
         # print(ls_messages)
         return jsonify(ls_replies), 200
     except Exception as e:
@@ -361,7 +415,7 @@ def replies_to_messages():
 # ------------------- emoji -------------------------
 
 @app.route('/api/messages/emoji', methods=['POST'])
-# @require_api_key
+@require_api_key
 def create_reaction():
     """
     Description: insert new emoji added by userX
@@ -386,7 +440,7 @@ def create_reaction():
             return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
 
 @app.route('/api/reactions/users', methods=['GET'])
-# @require_api_key
+@require_api_key
 def get_reaction():
     """
     Description: get user names from message_id and emoji
@@ -415,3 +469,6 @@ def get_reaction():
 
     except Exception as e:
         return jsonify({'error': 'Internal Server Error', 'details': str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(port=5000)

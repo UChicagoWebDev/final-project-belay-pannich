@@ -4,7 +4,6 @@ import axios from 'axios';
 import "./Messages.css";
 
 var USERTOKEN = '';
-console.log(`First load ${USERTOKEN}`);
 var USER_ID = '';
 var config = '';
 
@@ -34,7 +33,7 @@ export function Messages({ setShowReplies, setRepliesToMsg, id, userName, conten
       const response = await axios.post('/api/messages/emoji', data, config);
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch messages:', error);
+      console.error('Failed to post emoji:', error);
     }
     return;
     }
@@ -53,7 +52,9 @@ export function Messages({ setShowReplies, setRepliesToMsg, id, userName, conten
           <span className="messages_timestamp">{timestamp}</span>
         </h4>
         <p>{content}</p>
+        {!replyPanel && (
         <p className="messageReplies">Replies: {replies_count}</p>
+        )}
 
         {/* Emoji */}
         <div className="reactions">
@@ -159,8 +160,6 @@ export function PostMessage({channelName, channelId, repliesTo}) {
   );
 }
 
-
-
 export function MessagesContainer({ channelId, channelName, setShowReplies, setRepliesToMsg}) {
   // If MessagesContainer manages its own state and fetching logic,
       // it will automatically update based on the passed channelId prop.
@@ -171,21 +170,54 @@ export function MessagesContainer({ channelId, channelName, setShowReplies, setR
   config = {
     headers: {
       'Content-Type': 'application/json', // Specify the content type
-      'Authorization': `Bearer ${USERTOKEN}` // Authorization header, for example, a Bearer token
+      'Authorization': `${USERTOKEN}` // Authorization header, for example, a Bearer token
     }
   };
 
   useEffect(() => {
     // Fetch messages or set them in some way
     const fetchMessages = async () => {
+      // fetch messages
       try {
         const response = await axios.get(`/api/messages?channel_id=${channelId}`, config); // Correctly await the promise
-        const messages = response.data;
-        setMessages(messages); // Assuming messages is the data you want to set
-      } catch(error) {
+        const data = response.data;
+        if (!Array.isArray(data) || data.length === 0) {
+          // console.log(`fetch message not array or len 0`)
+          setMessages([])
+          return;
+        } else {
+          // setMessages(data);   // set messages
+
+          // find replies for each message
+          const countsPromises = data.map(async message => {
+            try {
+              const response = await axios.get(`/api/messages/replies_to?channel_id=${channelId}&message_id=${message.id}`, config);
+              return response.data.length;
+            } catch (error) {
+              console.error(`Failed to fetch reply count for message ${message.id}:`, error);
+              return 0; // Return 0 in case of an error
+            }
+          });
+
+          const repliesCounts = await Promise.all(countsPromises);
+
+          // Augment messages with their replies count
+          const messagesWithCounts = data.map((message, index) => ({
+            ...message,
+            replies_count: repliesCounts[index]
+          }));
+
+          setMessages(messagesWithCounts);   // update new messages that has replies_count field
+
+          return messagesWithCounts;
+        }
+
+      } catch (error) {
         console.error('Failed to fetch messages:', error);
+        return []; // Return an empty array in case of failure
       }
     }
+
     // Immediately fetch messages for the current channel
     fetchMessages();
 
@@ -193,58 +225,37 @@ export function MessagesContainer({ channelId, channelName, setShowReplies, setR
     const intervalId = setInterval(() => {
       console.log('Checking for new messages');
       fetchMessages(); // Fetch new messages
-    }, 5000);
+      console.log(messages);
+    }, 50000000);
 
     // Cleanup function to clear the interval
     return () => clearInterval(intervalId);
-  }, [channelId]); // Empty dependency array means this runs once on component mount
+  }, [channelId]); // Run when channelId changes
 
-
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return <div>No messages.</div>;
-  }
-
-  useEffect(() => {
-    // Fetch messages or set them in some way
-    const fetchRepliesCount = async () => {
-      try {
-        const response = await axios.get(`/api/messages/replies_to?channel_id=${channelId}&message_id=${messageId}`, config);
-        const data = response.data;
-        console.log(data.length);
-        setReMessages(data.length);
-      } catch(error) {
-        console.error('Failed to fetch reply count:', error);
-      }
-    }
-    // Immediately fetch messages for the current channel
-    fetchReplies();
-
-    // Set up an interval to fetch messages every 500ms
-    const intervalId = setInterval(() => {
-      console.log('Checking for new replies');
-      fetchReplies(); // Fetch new messages
-    }, 5000);
-
-    // Cleanup function to clear the interval
-    return () => clearInterval(intervalId);
-  }, []); // Empty dependency array means this runs once on component mount
 
   return (  // This is creating components
     <div className="chat">
-
-      {messages.map((message) => (
+      {messages.length > 0 ? (messages.map((message, index) => (
         <Messages
         key={message.id}
         id={message.id}
         content={message.content}
         timestamp={message.timestamp}
         userName={message.username}
-        replies_count = {fetchRepliesCount}
+        replies_count = {message.replies_count || 0}   // new field
         setShowReplies={setShowReplies}     // Passing setState function
         setRepliesToMsg={setRepliesToMsg}   // Passing setState function
       />
-      ))}
+      ))
+      ) : (
+        <div>No messages available.</div> // Placeholder or any other content for empty state
+      )
+    }
       <PostMessage channelId={channelId} channelName={channelName} />
     </div>
   );
 }
+
+
+
+// fix auth

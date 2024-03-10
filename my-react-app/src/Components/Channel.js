@@ -5,7 +5,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ReplyMessages } from './ReplyMessages';
 import "./Channel.css";
 
-const userId = localStorage.getItem('userId');
+var USERTOKEN = '';
+var USER_ID = '';
 var config = {};
 
 ///
@@ -13,19 +14,12 @@ var config = {};
 ///
 ///
 
-const placeholder_channels = [
-  {id: 1, name: "Pan's return waiting room", unread: 2},
-  {id: 2, name: "Olive is very fluffy", unread: 3},
-  {id: 3, name: "Chess tournament", unread: 1}
-]
-
 export const markMessagesAsRead = async (channelId) => {
-
   try { // Fetch latest message
     const response  = await axios.get('/api/messages', config);
     if (response.data.length > 0) {
         const latestMessage = response.data[response.data.length - 1];  // Get the latest message
-        console.log(latestMessage);
+        console.log(`Channel Latest Message${latestMessage}`);
     } else {
         console.log('No messages found');
     }
@@ -35,73 +29,147 @@ export const markMessagesAsRead = async (channelId) => {
 
   // Mark messages as read when visiting a channel
   const latestMessage = 1; // TODO: remove
-  await axios.post(`/api/channels/${channelId}/updateLastSeen`, {"channel_id": channelId, "user_id": userId, "last_message_id_seen": latestMessage}, config);
+  await axios.post(`/api/channels/${channelId}/updateLastSeen`, {"channel_id": channelId, "user_id": USER_ID, "last_message_id_seen": latestMessage}, config);
 
   // Optionally, refetch channels or update state to reflect the new unread count
 };
 
+function CreateChannel({onChannelCreated}) {
+  const [input, setInput] = useState("");
+  // api to create new channel
+  console.log(`create channel`);
+  const createChannel = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post('/api/channels', {'name': input} , config);
+      setInput("");     // clear input
+      if (onChannelCreated) onChannelCreated(input); // Callback for parent component
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch messages:', error);
+    }
+    return;
+  };
+
+  return (
+    <div className="createChannel">
+      <form onSubmit={createChannel}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={`Enter Channel Name}`}
+        />
+        <button type="submit">CREATE</button>
+      </form>
+    </div>
+  );
+};
+
 const ChannelsList = () => {
+  const [visibleComponent, setVisibleComponent] = useState('channels'); // Possible values: 'channels', 'messages', 'replies'
   const [channels, setChannels] = useState([]);
+  const [newChannel, setnewChannel] = useState(false);
+  const [currentChannelId, setCurrentChannelId] = useState(null);
   const [showReplies, setShowReplies] = useState(false);
   const [repliesToMsg, setRepliesToMsg] = useState('');
-
-  const userId = localStorage.getItem('userId');
   const navigate = useNavigate();
   const { channelId } = useParams();
-  console.log(channelId);
+  USER_ID = localStorage.getItem('userId');
+  USERTOKEN = localStorage.getItem('nichada_belay_auth_key');
+  config = {
+    headers: {
+      'Content-Type': 'application/json', // Specify the content type
+      'Authorization': `${USERTOKEN}` // Authorization header, for example, a Bearer token
+    }
+  };
+
+  //-------- Channel ---------
 
   // Fetch channels and unread counts
-
   useEffect(() => {
-    async function fetchUnreadCounts() {  // uniquely for this user. Identify user by token in the header
+    async function fetchChannelUnreadCounts() {  // uniquely for this user. Identify user by token in the header
       try {
           const response = await axios.get('/api/messages/unread_counts', config);
-          console.log(response.data);
+          console.log(`Fetch unread count`);
           setChannels(response.data); // Directly set the fetched data to your state
+          setnewChannel(false);
       } catch (error) {
           console.error('Failed to fetch unread counts:', error);
       }
     }
-    fetchUnreadCounts(); // Immediately fetch unread counts when page load
+    fetchChannelUnreadCounts(); // Immediately fetch unread counts when page load
 
     // Set up an interval to fetch messages every 500ms
     const intervalId = setInterval(() => {    // intervalId holds the reference ID returned by setInterval().
       console.log('Checking for unread messages');
-      fetchUnreadCounts(); // Fetch new messages
+      fetchChannelUnreadCounts(); // Fetch new messages
     }, 100000);
     // TODO change to 1000
 
     // Cleanup function to clear the interval
     return () => clearInterval(intervalId);
-  }, []); // The empty array means this effect runs once after the initial render and return when unmount i.e. navigate to different page or page refresh.
+  }, [newChannel]); // The empty array means this effect runs once after the initial render and return when unmount i.e. navigate to different page or page refresh.
 
   const handleChannelClick = (channelId) => {
+    setCurrentChannelId(channelId);
+    setVisibleComponent('messages');
     navigate(`/channel/${channelId}`);
   };
 
   const getChannelNameById = (channelId) => {
-    console.log(`Channel ID: ${typeof channelId}`);
-    const channel = placeholder_channels.find(channel => channel.id === Number(channelId));
+    // console.log(`Channel ID: ${typeof channelId}`);
+    const channel = channels.find(channel => channel.id === Number(channelId));
     return channel ? channel.name : undefined;
   }
+
+  const handleChannelCreated = (channelName) => {
+    setnewChannel(true);
+    console.log(`Channel created: ${channelName}`);
+  };
+
+  //-------- Narrow Screen ---------
+  // This effect updates visibleComponent when showReplies changes.
+  useEffect(() => {
+    if (showReplies) {
+      setVisibleComponent('replies'); // Show replies if showReplies is true
+    } else {
+      setVisibleComponent('messages'); // Show messages if showReplies is false
+    }
+  }, [showReplies]); // This effect depends on showReplies
+
+  useEffect(() => {
+    if (!channelId) {
+      setVisibleComponent('channels'); // Show replies if showReplies is true
+    }
+  }, [channelId]); // This effect depends on showReplies
+
+  //----------------------------------
 
   return (
     <div className="app-container">
       {/* sidebar */}
-      <div className="sidebar-container">
+      <div className={`sidebar-container ${visibleComponent === 'channels' ? 'active-component' : ''}`}>
         <h2>Channels</h2>
         <ul>
-          {placeholder_channels.map(channel => (
-            <li key={channel.id} onClick={() => handleChannelClick(channel.id)}>
-            {/* TODO : Fix Invalid Hook Call !!! */}
-              {channel.name} - Unread messages: {channel.unread}
-            </li>
-          ))}
+        {channels.length > 0 ? (channels.map(channel => (
+          <li key={channel.id}
+          className = {`channel ${currentChannelId === channel.id ? 'current-channel' : ''}`}
+          onClick={() => handleChannelClick(channel.id)
+          }>
+          {/* TODO : Fix Invalid Hook Call !!! */}
+            {channel.name} - Unread messages: {channel.unread_count}
+          </li>
+          ))
+        ) : (
+          <p>No channel available.</p> // Placeholder or any other content for empty state
+        )
+        }
+        <CreateChannel onChannelCreated={handleChannelCreated} />
         </ul>
         </div>
 
       {/* chat */}
-      <div className="chat-message-container">
+      <div className={`chat-message-container ${visibleComponent === 'messages' ? 'active-component' : ''}`}>
         <MessagesContainer
         channelId={channelId}
         channelName={getChannelNameById(channelId)}
@@ -111,8 +179,9 @@ const ChannelsList = () => {
 
       {/* reply thread */}
       {showReplies && (
-        <div className="reply-message-container">
+        <div className={`reply-message-container ${visibleComponent === 'replies' ? 'active-component' : ''}`}>
           Reply messages...
+          <button className='closeBtn' onClick={() => setShowReplies(false)}> Close </button>
           <ReplyMessages channelId={channelId} channelName={getChannelNameById(channelId)} messageId={repliesToMsg}/>
           {/* Reply messages */}
         </div>
@@ -124,44 +193,3 @@ const ChannelsList = () => {
 export default ChannelsList;
 
 // ----------------------------------------------------------------------------
-
-
-export const ChannelComponent = ({ channelId }) => {
-  const [intervalId, setIntervalId] = useState(null);
-
-  useEffect(() => {
-    // Mark all messages as read when the component mounts or channelId changes
-    markMessagesAsRead(channelId);
-
-    // Start checking for new messages every 500ms
-    const newIntervalId = setInterval(async () => {
-      console.log('Checking for new messages');
-
-      markMessagesAsRead(channelId);
-    }, 50000); // TODO change to 500ms
-    setIntervalId(newIntervalId);
-
-    // Cleanup function to clear the interval when the component unmounts or channelId changes
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [channelId]); // Re-run this effect if channelId changes
-
-  return (
-    <div>
-      {/* Other content */}
-      <p>Testtest</p>
-      <MessagesContainer channelId={channelId} />
-      {/* More content */}
-    </div>
-  );
-};
-
-
-// TODO : Do message Reply array count and display
-// All messages in a room have a Reply button or icon that opens the replies pane
-// Parse image URLs that appear in messages and display the images at the end of the message. (Hint: you may use the web to help you find an appropriate regular expression)
-// Users can add an emoji reaction to any message or reply. You may choose a limited set of emoji reactions you support.
-// Hovering over a reaction displays all the users who had that reaction
