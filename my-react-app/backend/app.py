@@ -69,14 +69,13 @@ def get_user_from_id(user_id):
 
 # from React
 @app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
+@app.route('/profile')
+@app.route('/login')
+@app.route('/channel')
+@app.route('/channel/<ch_id>')
+def serve(ch_id=None):
     print("get here")
-    print(path)
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
-        return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, 'index.html')
+    return app.send_static_file('index.html')
 
 # ------------------- API -------------------------
 
