@@ -14,8 +14,8 @@ export function ReplyMessages ({ channelId, channelName, messageId }) {
       // it will automatically update based on the passed channelId prop.
       // Assuming messages is initially an empty array or fetched from somewhere
   USERTOKEN = localStorage.getItem('nichada_belay_auth_key');     // set the global var
-  USER_ID = localStorage.getItem('userId');
-  USER_NAME = localStorage.getItem('userName');
+  USER_ID = localStorage.getItem('nichada_userId');
+  USER_NAME = localStorage.getItem('nichada_userName');
   config = {
     headers: {
       'Content-Type': 'application/json', // Specify the content type

@@ -1,13 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const USERTOKEN = localStorage.getItem('nichada_belay_auth_key');
-const USER_ID = localStorage.getItem('userId');
-
 function SignUp() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const navigate = useNavigate();
 
-  console.log(USER_ID);
-  
+  useEffect(() => {
+    const USERTOKEN = localStorage.getItem('nichada_belay_auth_key');
+    if (USERTOKEN) {
+      navigate("/login");
+    }
+  }, [navigate]); // Add `navigate` as a dependency load only when component has been mounted to avoid recursion
+
   const handleSubmit = async (e) => {
       console.log(username);
       e.preventDefault();

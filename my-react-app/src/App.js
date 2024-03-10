@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './Components/ProtectedRoute';
 
 import SignIn  from './Components/SignIn';
+import SignUp  from './Components/SignUp';
 import Profile  from './Components/Profile';
 import ChannelsList from './Components/Channel';
 import Welcome from './Components/Welcome';
@@ -18,12 +19,16 @@ function App() {
         <Routes>
             <Route path="/" element={<Welcome />} />
             <Route path="/login" element={<SignIn />} />
-
-            <Route path="/channel/:channelId" element={<ChannelsList />} />
-            <Route path="/channel" element={<ChannelsList />} />
-            <Route element={<ProtectedRoute />}>
-              <Route path="/profile" element={<Profile />} />
-            </Route>
+            <Route path="/signup" element={<SignUp />} />
+            {/* Protected */}
+            <Route path="/channel/:channelId" element={
+              <ProtectedRoute><ChannelsList /></ProtectedRoute>} />
+            <Route path="/channel" element={
+              <ProtectedRoute><ChannelsList /></ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute><Profile /></ProtectedRoute>
+            } />
         </Routes>
     </BrowserRouter>
   )

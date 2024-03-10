@@ -21,7 +21,6 @@ export function Messages({ setShowReplies, setRepliesToMsg, id, userName, conten
   // Function to handle adding a reaction to a message
   const addReaction = async (emoji) => {
     // Call to API to add reaction to this message
-    // TODO:
     console.log(`Add ${emoji} reaction to message`);
     const data = {
       "user_id": USER_ID,
@@ -165,7 +164,7 @@ export function MessagesContainer({ channelId, channelName, setShowReplies, setR
       // it will automatically update based on the passed channelId prop.
       // Assuming messages is initially an empty array or fetched from somewhere
   USERTOKEN = localStorage.getItem('nichada_belay_auth_key');     // set the global var
-  USER_ID = localStorage.getItem('userId');
+  USER_ID = localStorage.getItem('nichada_userId');
   const [messages, setMessages] = useState([]);
   config = {
     headers: {
@@ -226,7 +225,7 @@ export function MessagesContainer({ channelId, channelName, setShowReplies, setR
       console.log('Checking for new messages');
       fetchMessages(); // Fetch new messages
       console.log(messages);
-    }, 50000000);
+    }, 5000);
 
     // Cleanup function to clear the interval
     return () => clearInterval(intervalId);

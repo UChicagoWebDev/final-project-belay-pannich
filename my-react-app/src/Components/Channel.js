@@ -9,11 +9,6 @@ var USERTOKEN = '';
 var USER_ID = '';
 var config = {};
 
-///
-/// TODO : REMOVE PLACEHOLDER
-///
-///
-
 export const markMessagesAsRead = async (channelId) => {
   try { // Fetch latest message
     const response  = await axios.get('/api/messages', config);
@@ -74,7 +69,7 @@ const ChannelsList = () => {
   const [repliesToMsg, setRepliesToMsg] = useState('');
   const navigate = useNavigate();
   const { channelId } = useParams();
-  USER_ID = localStorage.getItem('userId');
+  USER_ID = localStorage.getItem('nichada_userId');
   USERTOKEN = localStorage.getItem('nichada_belay_auth_key');
   config = {
     headers: {
@@ -103,8 +98,7 @@ const ChannelsList = () => {
     const intervalId = setInterval(() => {    // intervalId holds the reference ID returned by setInterval().
       console.log('Checking for unread messages');
       fetchChannelUnreadCounts(); // Fetch new messages
-    }, 100000);
-    // TODO change to 1000
+    }, 1000);
 
     // Cleanup function to clear the interval
     return () => clearInterval(intervalId);
@@ -156,7 +150,6 @@ const ChannelsList = () => {
           className = {`channel ${currentChannelId === channel.id ? 'current-channel' : ''}`}
           onClick={() => handleChannelClick(channel.id)
           }>
-          {/* TODO : Fix Invalid Hook Call !!! */}
             {channel.name} - Unread messages: {channel.unread_count}
           </li>
           ))

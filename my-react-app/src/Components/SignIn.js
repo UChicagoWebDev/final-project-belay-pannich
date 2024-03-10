@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // ---- UseState vs. Static
 // https://legacy.reactjs.org/docs/hooks-state.html#:~:text=Normally%2C%20variables%20%E2%80%9Cdisappear%E2%80%9D%20when,have%20to%20be%20an%20object.
@@ -12,9 +12,9 @@ import { useNavigate } from 'react-router-dom';
 function SignIn() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    // const [ isAuthenticated, setIsAuthenticated ] = useState(false);
     const USERTOKEN = localStorage.getItem('nichada_belay_auth_key');
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -24,30 +24,20 @@ function SignIn() {
               // https://medium.com/@musturi.rakesh/best-es6-features-in-javascript-69a0b16425ce
             const response = await axios.post('/api/login', { username, password });
 
-                                                            // Update the global auth state to true
-            localStorage.setItem('nichada_belay_auth_key', response.data.token);        // TODO: get toekn. save the session-token for later use
-            localStorage.setItem('userId', response.data.id);
-            localStorage.setItem('userName', response.data.username);
-            localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('nichada_belay_auth_key', response.data.token);
+            localStorage.setItem('nichada_userId', response.data.id);
+            localStorage.setItem('nichada_userName', response.data.username);
 
             alert('Login successful');
 
-            navigate('/');              // Redirect to the / page
+            const from = location.state?.from?.pathname || '/';
+            navigate(from, { replace: true });
 
         } catch (error) {
             const errorMessage = error.response ? error.response.data.message : 'An error occurred. Please try again.';
             console.error('Login failed:', errorMessage);
             alert(errorMessage);
         }
-    };
-
-    const handleUserNameUI = () => {
-      var user_name = '';
-      user_name = localStorage.getItem('user_name');
-      const allUserNameUI = document.querySelectorAll('.username');
-      allUserNameUI.forEach(element => {
-        element.textContent = user_name;
-      });
     };
 
     return (
@@ -62,6 +52,7 @@ function SignIn() {
           <div>
             <button type="submit">Sign In</button>
           </div>
+          <div> If user currently logged in. They can't signup until they logout. </div>
         </form>
       </div>
     );

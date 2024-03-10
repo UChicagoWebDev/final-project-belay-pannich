@@ -3,30 +3,60 @@
 40 points
 https://classroom.github.com/a/qeha1A1z
 
-**Extension: Due to unexpected reason, received an extension to submit at end of the day on Sunday, March 10.**
+**Extension: I received an extension from Prof to submit at end of the day on Sunday, March 10.**
+
+note : I tried to build from react. The navigation works when navigating from the app, but I cannot get the refresh button/ accessing from the link to work. It was working in the react developer mode by `npm run`.
 
 ## Run Project
 
-### 1. Run React Frontend
+### `Flask run --reload -- debugger`
+
+## Directory
+
+```
+/my-react-app
+    /build                # React build directory
+    /static               # Flask static files (if any)
+    /templates            # Flask templates (if any)
+    /backend
+      app.py              # Flask application here
+      apply_migration.sh
+    /migration
+      *.sql
+      belay.db
+    /src                  # react components
+      /Components
+      ...
+```
+
+--------------------
+
+### If need to access Dev Environment
+
+#### React run on port 3000
 ```
 cd my-react-app
 npm install
 npm start
 ```
 
-### 2. Run Backend
+#### 2. Run Backend on port 5000
 ```
 cd my-react-app/backend
 flask run --reload --debugger
 ```
 
-### 3. Database Migration
+#### 3. Database Migration
 ```
-sqlite3 my-react-app/migration/belay.db <  my-react-app/migration
+cd my-react-app/backend
+bash apply_migrations.sh
+```
+#### 4. Build react
+```
+npm run build
 ```
 
 ### References
-
 
 Runs the app in the development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
@@ -34,7 +64,7 @@ Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 The page will reload when you make changes.\
 You may also see any lint errors in the console.
 
-----------------
+----------------------------------------------------------------
 
 ## Introduction
 
@@ -93,24 +123,24 @@ submission any classmates you collaborated with and any materials you consulted.
 
 ## Requirements and Rubric (40 points total)
 
-### Unauthenticated UI: (3 points)
+### Unauthenticated UI: (3 points) OK.
 
-- [ ] Unanthenticated users can create a new account
+- OK./ Unanthenticated users can create a new account
 - OK./ Unauthenticated users can sign in with their username and password
-- Unauthenticed users who try to access a room cannot see any messages in that
+- OK./ Unauthenticed users who try to access a room cannot see any messages in that
   room, and are sent to the signup/login page instead
 
-### Authenticated UI: (10 points)
+### Authenticated UI: (10 points) -1
 
 - OK./ Authenticated users can log out, change their username, and change their
   password
-- Authenticated users can see a list of all channels. For each channel, they
+- OK./ Authenticated users can see a list of all channels. For each channel, they
   can see how many unread messages they have in that channel
 - [ ] Visiting a channel marks all messages in it as read, and all new messages
   posted to that channel while the user is in it are marked as read too
 - OK./ Check for new messages in the channel at least once every 500 ms. Stop
   checking if the user leaves the channel. (Hint: use SetInterval)
-- Check for new unread messages in other channels at least once every second.
+- OK./ Check for new unread messages in other channels at least once every second.
   Use only one HTTP request to get counts for all channels
 - OK./ For each message with replies, display the number of replies to that message
   just below the message content
@@ -122,18 +152,18 @@ submission any classmates you collaborated with and any materials you consulted.
   limited set of emoji reactions you support.
 - OK./ Hovering over a reaction displays all the users who had that reaction
 
-### Single-Page State (5 points) -1
+### Single-Page State (5 points) OK.
 
 - OK./ Only serve one HTML request. Handle all other requests through the API
-- [ ] Push the channel name (for messages) or parent message id (for replies) to the
+- OK./ Push the channel name (for messages) or parent message id (for replies) to the
   history and navigation bar when the user navigates to a channel or thread
   Users can use the Back button to navigate to a previous channel or thread
-- Loading the unique URL of a channel or thread should open the app to that
+- OK./ Loading the unique URL of a channel or thread should open the app to that
   channel or thread
-- If an unauthenticated user follows a link to a channel or thread, show them
+- OK./ If an unauthenticated user follows a link to a channel or thread, show them
   the login or signup screens, but if they log in or sign up, send them to the
   original page they requested
-- [ ] Save the user's auth key in localStorage or in a cookie. Include your CNETID
+- OK./ Save the user's auth key in localStorage or in a cookie. Include your CNETID
   as part of your storage keys so your storage won't conflict with those of
   other students on the graders' machines. e.g.
   `window.localStorage.setItem('trevoraustin_belay_auth_key', 'abcdefg')`
@@ -205,3 +235,5 @@ Narrow Screens:
   read message in a channel
 - OK./ Create an endpoint to return unread message counts for the user for each channel in a
   single request with a single database query
+
+----------------------

@@ -1,21 +1,27 @@
-import string, random
+import string, random, os
 from flask import *
 import sqlite3
 from flask_cors import CORS
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../build', static_url_path='')
 CORS(app)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
+
 def get_db():
     db = getattr(g, '_database', None)
-
     if db is None:
         db = g._database = sqlite3.connect('../migration/belay.db' , timeout=30)
         db.row_factory = sqlite3.Row
         setattr(g, '_database', db)
     return db
+
+@app.teardown_appcontext
+def close_connection(exception):
+    db = getattr(g, '_database', None)
+    if db is not None:
+        db.close()
 
 def query_db(query, args=(), one=False):
     db = get_db()
@@ -55,21 +61,24 @@ def require_api_key(f):
 def get_user_from_id(user_id):
     return query_db('select * from Users where id = ?', [user_id], one=True)
 
-# TODO no need api keys ? store in sess token
-def new_user(username, password):
-    # This generate random user name, password, api_key
-    api_key = ''.join(random.choices(string.ascii_lowercase + string.digits, k=40))
-    u = query_db('insert into Users (name, password, api_key) ' +
-        'values (?, ?, ?) returning id, name, password, api_key',
-        (name, password, api_key),
-        one=True)
-    return u
+# ------------------- FROM REACT FRONTEND -------------------------
+
+# @app.route('/')
+# def index():
+#     return "Messaging App API. Go to port 3000 for FrontEnd."
+
+# from React
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    print("get here")
+    print(path)
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
 
 # ------------------- API -------------------------
-
-@app.route('/')
-def index():
-    return "Messaging App API. Go to port 3000 for FrontEnd."
 
 @app.route('/api/auth', methods=['POST'])
 def authenticate():

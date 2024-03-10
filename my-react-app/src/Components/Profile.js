@@ -13,7 +13,7 @@ function Profile() {
   const [password, setPassword] = useState('');
   const [repeatPassword, setRepeatPassword] = useState('');
   const navigate = useNavigate();
-  USER_ID = localStorage.getItem('userId');
+  USER_ID = localStorage.getItem('nichada_userId');
   USERTOKEN = localStorage.getItem('nichada_belay_auth_key');
   config = {
     headers: {
@@ -28,6 +28,7 @@ function Profile() {
       const data = response.data;
       USER_NAME = data.username;
       console.log(data.username);
+      localStorage.setItem('nichada_userName', newUsername);
 
       // Handle successful username change
       alert('Username successfully changed.');
@@ -38,7 +39,6 @@ function Profile() {
   };
 
   const handleChangePassword = async (newPassword) => {
-    const token = localStorage.getItem('token');
     try {
       const response = await axios.post('/api/user/change-password', { newPassword }, config);
       // Handle successful password change
@@ -51,9 +51,8 @@ function Profile() {
 
   const handleSignOut = () => {
     localStorage.removeItem('nichada_belay_auth_key');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('userName');
+    localStorage.removeItem('nichada_userId');
+    localStorage.removeItem('nichada_userName');
 
     alert('SignOut successful');
   };

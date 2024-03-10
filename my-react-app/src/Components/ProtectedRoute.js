@@ -1,13 +1,16 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
-export const ProtectedRoute = () => {
-  const USERTOKEN = localStorage.getItem('nichada_belay_auth_key')
-  // If not authenticated, redirect to the login page
+export const ProtectedRoute = ({ children }) => {
+  const USERTOKEN = localStorage.getItem('nichada_belay_auth_key');
+  const location = useLocation();
+
   if (!USERTOKEN) {
-    return <Navigate to="/login" replace />;
+    // Redirect to the login page, but remember the location the user was trying to go to
+    // Ref ProtectRoute & location : https://dev.to/collins87mbathi/reactjs-protected-route-m3j
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
   // If authenticated, render the child components
-  return <Outlet />;
+  return children;
 };
