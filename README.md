@@ -4,7 +4,7 @@
 https://classroom.github.com/a/qeha1A1z
 
 ## `** Extension: deadline t end of the day on Sunday, March 10. **`
-note : I tried to build from react. The navigation works when navigating from the app, but I cannot get the refresh button/ accessing from the link to work. It was working in the react developer mode by `npm run`.
+
 
 ## Run Project
 

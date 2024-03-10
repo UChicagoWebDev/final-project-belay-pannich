@@ -46,7 +46,7 @@ export function ReplyMessages ({ channelId, channelName, messageId }) {
     const intervalId = setInterval(() => {
       console.log('Checking for new replies');
       fetchReplies(); // Fetch new messages
-    }, 5000);
+    }, 500);
 
     // Cleanup function to clear the interval
     return () => clearInterval(intervalId);

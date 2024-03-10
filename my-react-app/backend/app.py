@@ -68,7 +68,7 @@ def get_user_from_id(user_id):
 #     return "Messaging App API. Go to port 3000 for FrontEnd."
 
 # from React
-@app.route('/', defaults={'path': ''})
+@app.route('/')
 @app.route('/profile')
 @app.route('/login')
 @app.route('/channel')
@@ -243,9 +243,9 @@ def create_channel():
 #     return jsonify([{'id': channel['id'], 'name': channel['name']} for channel in channels]), 200
 
 # updating last read
-@app.route('/api/channels/${channelId}/updateLastSeen', methods=['POST'])
+@app.route('/api/channels/<int:channelId>/updateLastSeen', methods=['POST'])
 @require_api_key
-def update_last_message_seen():
+def update_last_message_seen(channelId):
     """
     Description: update last message id seen
     Request Header: `Authorization: Bearer session_token`
@@ -271,6 +271,7 @@ def update_last_message_seen():
         else:
             # If no record exists, insert a new one
             query_db('INSERT INTO Users_Messages_Seen (user_id, channel_id, last_message_id_seen) VALUES (?, ?, ?)', (user_id, channel_id, last_message_id_seen))
+        return jsonify({'message':'updated latest message seen'})
 
     except Exception as e:
         return jsonify({'error': f'An error occurred while updating last message seen: {e}'}), 500

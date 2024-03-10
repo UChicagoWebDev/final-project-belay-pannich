@@ -10,10 +10,11 @@ var USER_ID = '';
 var config = {};
 
 export const markMessagesAsRead = async (channelId) => {
+  var latestMessage = '';
   try { // Fetch latest message
-    const response  = await axios.get('/api/messages', config);
+    const response  = await axios.get(`/api/messages?channel_id=${channelId}`, config);
     if (response.data.length > 0) {
-        const latestMessage = response.data[response.data.length - 1];  // Get the latest message
+        latestMessage = response.data[response.data.length - 1];  // Get the latest message
         console.log(`Channel Latest Message${latestMessage}`);
     } else {
         console.log('No messages found');
@@ -23,8 +24,14 @@ export const markMessagesAsRead = async (channelId) => {
   }
 
   // Mark messages as read when visiting a channel
-  const latestMessage = 1; // TODO: remove
-  await axios.post(`/api/channels/${channelId}/updateLastSeen`, {"channel_id": channelId, "user_id": USER_ID, "last_message_id_seen": latestMessage}, config);
+  const last_message_id_seen = latestMessage.id;
+  const user_id = Number(USER_ID);
+
+  try {
+    const response = await axios.post(`/api/channels/${channelId}/updateLastSeen`, {"channel_id": channelId, "user_id": user_id, "last_message_id_seen": last_message_id_seen}, config);
+  } catch (error) {
+    console.error('Failed to fetch messages:', error);
+  }
 
   // Optionally, refetch channels or update state to reflect the new unread count
 };
@@ -86,6 +93,7 @@ const ChannelsList = () => {
       try {
           const response = await axios.get('/api/messages/unread_counts', config);
           console.log(`Fetch unread count`);
+          console.log(response.data);
           setChannels(response.data); // Directly set the fetched data to your state
           setnewChannel(false);
       } catch (error) {
@@ -94,7 +102,7 @@ const ChannelsList = () => {
     }
     fetchChannelUnreadCounts(); // Immediately fetch unread counts when page load
 
-    // Set up an interval to fetch messages every 500ms
+    // Set up an interval to channel every 1 sec
     const intervalId = setInterval(() => {    // intervalId holds the reference ID returned by setInterval().
       console.log('Checking for unread messages');
       fetchChannelUnreadCounts(); // Fetch new messages
@@ -107,6 +115,7 @@ const ChannelsList = () => {
   const handleChannelClick = (channelId) => {
     setCurrentChannelId(channelId);
     setVisibleComponent('messages');
+    markMessagesAsRead(channelId);
     navigate(`/channel/${channelId}`);
   };
 

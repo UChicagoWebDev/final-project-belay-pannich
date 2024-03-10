@@ -225,7 +225,7 @@ export function MessagesContainer({ channelId, channelName, setShowReplies, setR
       console.log('Checking for new messages');
       fetchMessages(); // Fetch new messages
       console.log(messages);
-    }, 5000);
+    }, 500);
 
     // Cleanup function to clear the interval
     return () => clearInterval(intervalId);
