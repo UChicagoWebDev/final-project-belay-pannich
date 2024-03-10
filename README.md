@@ -7,7 +7,7 @@ https://classroom.github.com/a/qeha1A1z
 
 
 ## Run Project
-
+- cd my-react-app/backend
 ### `Flask run --reload -- debugger`
 
 ## Directory
