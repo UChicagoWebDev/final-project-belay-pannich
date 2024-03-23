@@ -3,9 +3,6 @@
 40 points
 https://classroom.github.com/a/qeha1A1z
 
-## `** Extension: deadline t end of the day on Sunday, March 10. **`
-
-
 ## Run Project
 - cd my-react-app/backend
 ### `Flask run --reload -- debugger`
